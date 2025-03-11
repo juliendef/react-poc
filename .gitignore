@@ -1,0 +1,4 @@
+react-video-scrubbing-thumbnail/public/thumbnails/*
+**/public/*
+**/node_modules/*
+.idea

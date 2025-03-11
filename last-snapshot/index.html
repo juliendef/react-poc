@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video.js Transition POC</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.5.2/video-js.min.css" rel="stylesheet">
+</head>
+<body>
+<video id="videoPlayer" class="video-js vjs-default-skin" width="640" height="360" controls>
+    <source src="https://www.w3schools.com/html/movie.mp4" type="video/mp4">
+</video>
+<canvas id="canvas"></canvas>
+<img id="asd" src="https://www.w3schools.com/html/pic_trulli.jpg" alt="poster">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/8.5.2/video.min.js"></script>
+<script>
+  const player = videojs('videoPlayer');
+
+  const videos = [
+    'https://www.w3schools.com/html/movie.mp4',
+    'https://www.w3schools.com/html/mov_bbb.mp4',
+  ];
+
+  let currentVideoIndex = 0;
+
+  player.on('ended', function() {
+    currentVideoIndex++;
+    if (currentVideoIndex < videos.length) {
+      player.poster(captureFrame); // Set poster to last captured frame
+      player.src({ src: videos[currentVideoIndex], type: 'video/mp4' });
+      player.load();
+      player.play();
+    }
+  });
+
+  setInterval(() => captureFrame(), 1000);
+
+  function captureFrame() {
+    const canvas = document.getElementById('canvas');
+    const posterImage = document.getElementById('asd');
+    const video = document.getElementById('videoPlayer_html5_api');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const frameUrl = canvas.toDataURL('image/jpeg');
+    posterImage.src = frameUrl;
+    return frameUrl;
+  }
+
+</script>
+</body>
+</html>
