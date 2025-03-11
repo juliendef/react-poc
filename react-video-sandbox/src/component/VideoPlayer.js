@@ -8,19 +8,14 @@ const VideoPlayer = () => {
 
   const handleStartStream = () => {
     const videoElement = videoRef.current;
-    const mediaSource = new MediaSource();
-    videoElement.src = URL.createObjectURL(mediaSource);
-    mediaSource.addEventListener('sourceopen', () => {
-      const sourceBuffer = mediaSource.addSourceBuffer('video/mp4; codecs="avc1.42E01E, mp4a.40.2"');
 
-      const pipeline = new RtspMp4Pipeline({
-        ws: { uri: wsUrl },
-        rtsp: { uri: rtspUrl },
-        mediaElement: videoElement,
-      });
-
-      pipeline.start();
+    const pipeline = new RtspMp4Pipeline({
+      ws: { uri: wsUrl },
+      rtsp: { uri: rtspUrl },
+      mediaElement: videoElement,
     });
+
+    pipeline.start();
   };
 
   return (
@@ -57,5 +52,20 @@ const VideoPlayer = () => {
     </div>
   );
 };
+
+function captureFrame(videoElement) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = videoElement.videoWidth;
+  canvas.height = videoElement.videoHeight;
+  ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+  // Convert to an image
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    console.log("Extracted frame:", url);
+  }, "image/png");
+}
 
 export default VideoPlayer;
