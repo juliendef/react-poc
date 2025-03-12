@@ -1,12 +1,16 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import { RtspMp4Pipeline } from 'media-stream-library';
 
 const VideoPlayer = () => {
   const videoRef = useRef(null);
   const [wsUrl, setWsUrl] = useState('ws://dev.videoprotector.com/ws-stream-proxy');
   const [rtspUrl, setRtspUrl] = useState('');
-  const [isReversing, setIsReversing] = useState(false);
+  const [capturedFrame, setCapturedFrame] = useState(null);
+  const [streamError, setStreamError] = useState(false);
+
+  const captureFrameIntervalRef = useRef(null);
   const reverseIntervalRef = useRef(null);
+
 
   const handleKeyDown = (forward) => {
     const videoElement = videoRef.current;
@@ -18,6 +22,26 @@ const VideoPlayer = () => {
     }
   };
 
+  function captureFrame() {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    const videoElement = videoRef.current;
+    if (!videoElement) return;
+
+    canvas.width = videoElement.videoWidth;
+    canvas.height = videoElement.videoHeight;
+    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+    // Convert to an image
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+
+      const url = URL.createObjectURL(blob);
+      setCapturedFrame(url);
+    }, "image/png");
+  }
+
   const handleStartStream = () => {
     const videoElement = videoRef.current;
 
@@ -27,28 +51,45 @@ const VideoPlayer = () => {
       mediaElement: videoElement,
     });
 
+    // Capture frames periodically
+    captureFrameIntervalRef.current = setInterval(() => {
+      if (videoElement.readyState >= 2) {
+        captureFrame(videoElement);
+      }
+    }, 1000); // Adjust the interval as needed
+
     pipeline.start();
   };
 
-
   const startReversePlayback = () => {
     const videoElement = videoRef.current;
-    setIsReversing(true);
     reverseIntervalRef.current = setInterval(() => {
       if (videoElement.currentTime > 0) {
         videoElement.currentTime -= 0.1; // Adjust the decrement value as needed
       } else {
         clearInterval(reverseIntervalRef.current);
-        setIsReversing(false);
       }
     }, 100); // Adjust the interval as needed
   };
 
   const stopReversePlayback = () => {
     clearInterval(reverseIntervalRef.current);
-    setIsReversing(false);
   };
 
+  const simulateStreamCrash = () => {
+    if (streamError) {
+      setStreamError(false);
+    } else {
+      setStreamError(true);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      clearInterval(captureFrameIntervalRef.current);
+      clearInterval(reverseIntervalRef.current);
+    }
+  }, []);
 
   return (
     <div>
@@ -74,35 +115,27 @@ const VideoPlayer = () => {
       </div>
       <button onClick={handleStartStream}>Start Stream</button>
 
-      <video
-        id="video"
-        ref={videoRef}
-        className="video-js vjs-default-skin"
-        controls
-        autoPlay
-        // stretch the video to fill the container
-        style={{ width: 1280, height: 720, objectFit: 'fill' }}
-      ></video>
+      {streamError && capturedFrame ? (
+        <img src={capturedFrame} alt="Captured frame" style={{ width: 1280, height: 720, objectFit: 'fill' }} />
+      ) : (
+        <video
+          id="video"
+          ref={videoRef}
+          className="video-js vjs-default-skin"
+          controls
+          autoPlay
+          // stretch the video to fill the container
+          style={{ width: 1280, height: 720, objectFit: 'fill' }}
+        ></video>
+      )}
+
       <button onClick={() => handleKeyDown(false)}>Backward</button>
       <button onClick={() => handleKeyDown(true)}>Forward</button>
       <button onMouseDown={startReversePlayback} onMouseUp={stopReversePlayback}>Reverse Playback</button>
+      <button onClick={simulateStreamCrash}>Simulate Stream Crash</button>
     </div>
   );
 };
 
-function captureFrame(videoElement) {
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-
-  canvas.width = videoElement.videoWidth;
-  canvas.height = videoElement.videoHeight;
-  ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-  // Convert to an image
-  canvas.toBlob((blob) => {
-    const url = URL.createObjectURL(blob);
-    console.log("Extracted frame:", url);
-  }, "image/png");
-}
 
 export default VideoPlayer;
