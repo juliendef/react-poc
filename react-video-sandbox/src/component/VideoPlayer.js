@@ -116,7 +116,7 @@ const VideoPlayer = () => {
       <button onClick={handleStartStream}>Start Stream</button>
 
       {streamError && capturedFrame ? (
-        <img src={capturedFrame} alt="Captured frame" style={{ width: 1280, height: 720, objectFit: 'fill' }} />
+        <img src={capturedFrame} alt="Captured frame" style={{ width: 1280, height: 720, objectFit: 'fill', display: "block"}} />
       ) : (
         <video
           id="video"
